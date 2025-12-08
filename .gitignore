@@ -1,8 +1,43 @@
+# Eclipse
 .metadata/
-Servers/
-**/build/
-**/*.class
-*.log
+.settings/
 .classpath
 .project
-.settings/
+*.launch
+
+# Build directories
+**/build/
+**/target/
+**/bin/
+
+# Compiled class files
+**/*.class
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+*.iws
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Virtual machine crash logs
+hs_err_pid*

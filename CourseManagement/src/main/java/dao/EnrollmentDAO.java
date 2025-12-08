@@ -23,18 +23,23 @@ public class EnrollmentDAO {
 
     public List<Course> getCoursesOfStudent(int studentId) {
         List<Course> list = new ArrayList<>();
-        String sql = "SELECT c.id, c.course_code, c.name, c.description, c.teacher_id FROM courses c " +
-                "INNER JOIN enrollments e ON c.id = e.course_id WHERE e.student_id = ? ORDER BY c.course_code";
+        String sql = "SELECT c.id, c.course_code, c.name, c.description, c.teacher_id, t.name AS teacher_name " +
+                "FROM courses c " +
+                "INNER JOIN enrollments e ON c.id = e.course_id " +
+                "LEFT JOIN teacher t ON c.teacher_id = t.id " +
+                "WHERE e.student_id = ? ORDER BY c.course_code";
         try (Connection c = DBUtil.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, studentId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    list.add(new Course(
+                    Course course = new Course(
                             rs.getInt("id"),
                             rs.getString("course_code"),
                             rs.getString("name"),
                             rs.getString("description"),
-                            (Integer) rs.getObject("teacher_id")));
+                            (Integer) rs.getObject("teacher_id"));
+                    course.setTeacherName(rs.getString("teacher_name"));
+                    list.add(course);
                 }
             }
         } catch (SQLException e) {

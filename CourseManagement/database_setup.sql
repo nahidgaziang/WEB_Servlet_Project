@@ -60,16 +60,15 @@ INSERT INTO admin (username, password, name) VALUES
 ('superadmin', 'super123', 'Super Admin');
 
 INSERT INTO teacher (username, password, name) VALUES
-('teacher1', 'teacher123', 'Dr. John Smith'),
-('teacher2', 'teacher123', 'Prof. Sarah Johnson'),
-('teacher3', 'teacher123', 'Dr. Michael Brown');
+('teacher1', 'teacher123', 'A.K.M. Fakhrul Hossain'),
+('teacher2', 'teacher123', 'PMD Fahimul Islam Fahim'),
+('teacher3', 'teacher123', 'Ishtiaque Zahid');
 
 INSERT INTO student (username, password, name, registration_no) VALUES
-('student1', 'student123', 'Alice Wilson', '2022331048'),
-('student2', 'student123', 'Bob Martinez', '2022331049'),
-('student3', 'student123', 'Charlie Davis', '2022331050'),
-('student4', 'student123', 'Diana Garcia', '2022331051'),
-('student5', 'student123', 'Ethan Rodriguez', '2022331052');
+('nahid', '123456', 'Nahid Gazi', '2022331048'),
+('rahat', '123456', 'Rahat Farabi', '2022331096'),
+('ridoy', '123456', 'Ridoy Bariya', '2022331070');
+
 
 INSERT INTO courses (course_code, name, description, teacher_id) VALUES
 ('CS101', 'Introduction to Programming', 'Learn the basics of programming using Java', 1),
@@ -81,6 +80,4 @@ INSERT INTO courses (course_code, name, description, teacher_id) VALUES
 INSERT INTO enrollments (student_id, course_id) VALUES
 (1, 1), (1, 2), (1, 3),
 (2, 1), (2, 4),
-(3, 2), (3, 3), (3, 5),
-(4, 1), (4, 3), (4, 4),
-(5, 2), (5, 5);
+(3, 2), (3, 3), (3, 5);
