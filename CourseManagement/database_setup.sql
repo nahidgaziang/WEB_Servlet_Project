@@ -26,18 +26,21 @@ CREATE TABLE student (
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
+    registration_no VARCHAR(50) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Create courses table
 CREATE TABLE courses (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    course_code VARCHAR(20) NOT NULL UNIQUE,
     name VARCHAR(200) NOT NULL,
     description TEXT,
     teacher_id INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (teacher_id) REFERENCES teacher(id) ON DELETE SET NULL
+    FOREIGN KEY (teacher_id) REFERENCES teacher(id) ON DELETE SET NULL,
+    INDEX idx_course_code (course_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Create enrollments table
@@ -61,19 +64,19 @@ INSERT INTO teacher (username, password, name) VALUES
 ('teacher2', 'teacher123', 'Prof. Sarah Johnson'),
 ('teacher3', 'teacher123', 'Dr. Michael Brown');
 
-INSERT INTO student (username, password, name) VALUES
-('student1', 'student123', 'Alice Wilson'),
-('student2', 'student123', 'Bob Martinez'),
-('student3', 'student123', 'Charlie Davis'),
-('student4', 'student123', 'Diana Garcia'),
-('student5', 'student123', 'Ethan Rodriguez');
+INSERT INTO student (username, password, name, registration_no) VALUES
+('student1', 'student123', 'Alice Wilson', '2022331048'),
+('student2', 'student123', 'Bob Martinez', '2022331049'),
+('student3', 'student123', 'Charlie Davis', '2022331050'),
+('student4', 'student123', 'Diana Garcia', '2022331051'),
+('student5', 'student123', 'Ethan Rodriguez', '2022331052');
 
-INSERT INTO courses (name, description, teacher_id) VALUES
-('Introduction to Programming', 'Learn the basics of programming using Java', 1),
-('Data Structures and Algorithms', 'Advanced data structures and algorithm analysis', 2),
-('Web Development', 'Full-stack web development with modern technologies', 1),
-('Database Management Systems', 'Relational databases and SQL', 3),
-('Software Engineering', 'Software development methodologies and best practices', 2);
+INSERT INTO courses (course_code, name, description, teacher_id) VALUES
+('CS101', 'Introduction to Programming', 'Learn the basics of programming using Java', 1),
+('CS102', 'Data Structures and Algorithms', 'Advanced data structures and algorithm analysis', 2),
+('CS103', 'Web Development', 'Full-stack web development with modern technologies', 1),
+('CS104', 'Database Management Systems', 'Relational databases and SQL', 3),
+('CS105', 'Software Engineering', 'Software development methodologies and best practices', 2);
 
 INSERT INTO enrollments (student_id, course_id) VALUES
 (1, 1), (1, 2), (1, 3),

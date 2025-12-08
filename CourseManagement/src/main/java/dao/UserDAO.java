@@ -51,14 +51,17 @@ public class UserDAO {
     /**
      * Registers a new user (teacher or student only)
      * 
-     * @param username Username
-     * @param password Password
-     * @param name     Full name
-     * @param email    Email address
-     * @param role     Role (teacher or student)
+     * @param username       Username
+     * @param password       Password
+     * @param name           Full name
+     * @param email          Email address (currently not stored)
+     * @param role           Role (teacher or student)
+     * @param registrationNo Registration number (for students only, can be null for
+     *                       teachers)
      * @return true if registration successful, false otherwise
      */
-    public boolean registerUser(String username, String password, String name, String email, String role) {
+    public boolean registerUser(String username, String password, String name, String email, String role,
+            String registrationNo) {
         // Only allow teacher and student registration
         if (!"teacher".equals(role) && !"student".equals(role)) {
             return false;
@@ -69,11 +72,20 @@ public class UserDAO {
             return false;
         }
 
-        String sql = "INSERT INTO " + role + " (username, password, name) VALUES (?, ?, ?)";
+        String sql;
+        if ("student".equals(role)) {
+            sql = "INSERT INTO " + role + " (username, password, name, registration_no) VALUES (?, ?, ?, ?)";
+        } else {
+            sql = "INSERT INTO " + role + " (username, password, name) VALUES (?, ?, ?)";
+        }
+
         try (Connection c = DBUtil.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, password);
             ps.setString(3, name);
+            if ("student".equals(role)) {
+                ps.setString(4, registrationNo);
+            }
             int rows = ps.executeUpdate();
             return rows > 0;
         } catch (Exception e) {

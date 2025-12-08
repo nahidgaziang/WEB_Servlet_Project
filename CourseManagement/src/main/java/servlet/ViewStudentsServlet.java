@@ -14,14 +14,17 @@ public class ViewStudentsServlet extends HttpServlet {
     private EnrollmentDAO edao = new EnrollmentDAO();
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession s = req.getSession(false);
-        if (s == null) { resp.sendRedirect(req.getContextPath() + "/index.jsp"); return; }
-        User u = (User) s.getAttribute("user");
-        if (u == null || !"teacher".equals(u.getRole())) { resp.sendRedirect(req.getContextPath() + "/index.jsp"); return; }
+        String courseIdStr = req.getParameter("courseId");
+        if (courseIdStr == null || courseIdStr.isEmpty()) {
+            resp.sendRedirect(req.getContextPath() + "/teacher/courses.jsp");
+            return;
+        }
 
-        int courseId = Integer.parseInt(req.getParameter("courseId"));
-        List<String> students = edao.getStudentsUsernamesByCourse(courseId);
+        int courseId = Integer.parseInt(courseIdStr);
+        EnrollmentDAO edao = new EnrollmentDAO();
+        List<String[]> students = edao.getStudentDetailsByCourse(courseId);
         req.setAttribute("students", students);
+
         req.getRequestDispatcher("/teacher/students.jsp").forward(req, resp);
     }
 }

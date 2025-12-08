@@ -154,7 +154,8 @@
                                 <label class="form-label small fw-medium">Register As</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-person-badge-fill"></i></span>
-                                    <select name="role" class="form-select" required>
+                                    <select name="role" id="roleSelect" class="form-select" required
+                                        onchange="toggleRegistrationNo()">
                                         <option value="">Select Your Role</option>
                                         <option value="teacher">Teacher</option>
                                         <option value="student">Student</option>
@@ -165,6 +166,36 @@
                                     registration
                                 </small>
                             </div>
+
+                            <div class="mb-3" id="registrationNoField" style="display: none;">
+                                <label class="form-label small fw-medium">Registration Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-card-heading"></i></span>
+                                    <input type="text" name="registrationNo" id="registrationNoInput"
+                                        class="form-control"
+                                        placeholder="Enter registration number (e.g., 2022331048)" />
+                                </div>
+                                <small class="text-muted ms-1">
+                                    <i class="bi bi-info-circle"></i> Required for student registration
+                                </small>
+                            </div>
+
+                            <script>
+                                function toggleRegistrationNo() {
+                                    var role = document.getElementById('roleSelect').value;
+                                    var field = document.getElementById('registrationNoField');
+                                    var input = document.getElementById('registrationNoInput');
+
+                                    if (role === 'student') {
+                                        field.style.display = 'block';
+                                        input.setAttribute('required', 'required');
+                                    } else {
+                                        field.style.display = 'none';
+                                        input.removeAttribute('required');
+                                        input.value = '';
+                                    }
+                                }
+                            </script>
 
                             <c:if test="${param.error != null}">
                                 <div class="alert alert-danger d-flex align-items-center mb-3">

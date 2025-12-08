@@ -13,12 +13,21 @@ public class AdminAddCourseServlet extends HttpServlet {
 
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
+        String courseCode = req.getParameter("courseCode");
         String name = req.getParameter("name");
         String desc = req.getParameter("description");
         String teacherIdStr = req.getParameter("teacherId");
         Integer teacherId = null;
-        if (teacherIdStr != null && !teacherIdStr.isEmpty()) teacherId = Integer.parseInt(teacherIdStr);
-        dao.addCourse(name, desc, teacherId);
-        resp.sendRedirect(req.getContextPath() + "/admin/dashboard.jsp");
+        if (teacherIdStr != null && !teacherIdStr.isEmpty()) {
+            teacherId = Integer.parseInt(teacherIdStr);
+        }
+
+        boolean success = dao.addCourse(courseCode, name, desc, teacherId);
+        if (success) {
+            resp.sendRedirect(req.getContextPath() + "/admin/dashboard.jsp?success=Course+added+successfully");
+        } else {
+            resp.sendRedirect(
+                    req.getContextPath() + "/admin/dashboard.jsp?error=Failed+to+add+course+(code+may+already+exist)");
+        }
     }
 }

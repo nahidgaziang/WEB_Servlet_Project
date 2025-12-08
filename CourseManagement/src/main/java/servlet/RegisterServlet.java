@@ -23,6 +23,7 @@ public class RegisterServlet extends HttpServlet {
         String name = req.getParameter("name");
         String email = req.getParameter("email");
         String role = req.getParameter("role");
+        String registrationNo = req.getParameter("registrationNo"); // For students
 
         // Validate input
         if (username == null || username.trim().isEmpty() ||
@@ -40,14 +41,21 @@ public class RegisterServlet extends HttpServlet {
             return;
         }
 
+        // For students, registration number is required
+        if ("student".equals(role) && (registrationNo == null || registrationNo.trim().isEmpty())) {
+            resp.sendRedirect(
+                    req.getContextPath() + "/register.jsp?error=Registration+number+is+required+for+students");
+            return;
+        }
+
         // Attempt registration
-        boolean success = userDao.registerUser(username, password, name, email, role);
+        boolean success = userDao.registerUser(username, password, name, email, role, registrationNo);
 
         if (success) {
             resp.sendRedirect(req.getContextPath() + "/index.jsp?success=Registration+successful!+Please+login");
         } else {
             resp.sendRedirect(
-                    req.getContextPath() + "/register.jsp?error=Username+already+exists+or+registration+failed");
+                    req.getContextPath() + "/register.jsp?error=Username+or+registration+number+already+exists");
         }
     }
 }

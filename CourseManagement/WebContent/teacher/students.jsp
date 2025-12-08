@@ -15,14 +15,29 @@
         <div class="container">
           <h3>Students in Course</h3>
           <a href="${pageContext.request.contextPath}/teacher/courses.jsp" class="btn btn-secondary mb-3">Back</a>
-          <ul class="list-group">
-            <c:forEach var="s" items="${students}">
-              <li class="list-group-item">${s}</li>
-            </c:forEach>
-            <c:if test="${empty students}">
-              <li class="list-group-item">No students enrolled yet.</li>
-            </c:if>
-          </ul>
+
+          <c:if test="${not empty students}">
+            <table class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Registration Number</th>
+                </tr>
+              </thead>
+              <tbody>
+                <c:forEach var="student" items="${students}">
+                  <tr>
+                    <td>${student[0]}</td>
+                    <td><strong>${student[1]}</strong></td>
+                  </tr>
+                </c:forEach>
+              </tbody>
+            </table>
+          </c:if>
+
+          <c:if test="${empty students}">
+            <div class="alert alert-info">No students enrolled yet.</div>
+          </c:if>
         </div>
       </body>
 

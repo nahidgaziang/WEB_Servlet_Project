@@ -12,10 +12,15 @@ public class AssignTeacherServlet extends HttpServlet {
     private CourseDAO dao = new CourseDAO();
 
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        int courseId = Integer.parseInt(req.getParameter("courseId"));
+        String courseCode = req.getParameter("courseCode");
         String teacherIdStr = req.getParameter("teacherId");
         Integer teacherId = (teacherIdStr == null || teacherIdStr.isEmpty()) ? null : Integer.parseInt(teacherIdStr);
-        dao.assignTeacher(courseId, teacherId);
-        resp.sendRedirect(req.getContextPath() + "/admin/dashboard.jsp");
+
+        boolean success = dao.assignTeacherByCode(courseCode, teacherId);
+        if (success) {
+            resp.sendRedirect(req.getContextPath() + "/admin/dashboard.jsp?success=Teacher+assigned+successfully");
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/admin/dashboard.jsp?error=Course+code+not+found");
+        }
     }
 }
