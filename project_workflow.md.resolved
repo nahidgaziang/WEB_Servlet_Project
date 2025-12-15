@@ -1,0 +1,882 @@
+# 🔄 Course Management System - Complete Workflow Documentation
+
+## Project Architecture Overview
+
+### **Three-Tier Architecture**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  PRESENTATION LAYER                  │
+│              (JSP Pages - User Interface)            │
+├─────────────────────────────────────────────────────┤
+│                  BUSINESS LOGIC LAYER                │
+│           (Servlets - Request Processing)            │
+├─────────────────────────────────────────────────────┤
+│                   DATA ACCESS LAYER                  │
+│           (DAO Classes - Database Operations)        │
+├─────────────────────────────────────────────────────┤
+│                    DATABASE LAYER                    │
+│              (MySQL - Data Persistence)              │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📂 Project Component Breakdown
+
+### **1. Presentation Layer (JSP Pages)**
+
+| File | Purpose | User Role |
+|------|---------|-----------|
+| [index.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/index.jsp) | Login page | All users |
+| [register.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/register.jsp) | User registration | New users |
+| [admin/dashboard.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/admin/dashboard.jsp) | Course management interface | Admin only |
+| [admin/edit-course.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/admin/edit-course.jsp) | Course editing interface | Admin only |
+| [teacher/courses.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/teacher/courses.jsp) | Teacher's assigned courses | Teacher only |
+| [teacher/students.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/teacher/students.jsp) | List of enrolled students | Teacher only |
+| [student/courses.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/student/courses.jsp) | Browse and enroll in courses | Student only |
+| [student/registered.jsp](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/WebContent/student/registered.jsp) | View enrolled courses | Student only |
+
+### **2. Business Logic Layer (Servlets)**
+
+| Servlet | URL Mapping | HTTP Method | Purpose |
+|---------|-------------|-------------|---------|
+| [LoginServlet](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/servlet/LoginServlet.java#11-53) | `/login` | POST | User authentication with role validation |
+| `RegisterServlet` | `/register` | POST | User registration (teacher/student) |
+| `LogoutServlet` | `/logout` | GET | Session termination |
+| `AdminAddCourseServlet` | `/admin/addCourse` | POST | Create new course |
+| `AdminUpdateCourseServlet` | `/admin/updateCourse` | POST | Update course details |
+| `AdminDeleteCourseServlet` | `/admin/deleteCourse` | POST | Delete course and enrollments |
+| `AssignTeacherServlet` | `/admin/assignTeacher` | POST | Assign/reassign teacher to course |
+| `StudentRegisterServlet` | `/student/registerCourse` | POST | Enroll student in course |
+| `ViewStudentsServlet` | `/teacher/viewStudents` | GET | Retrieve enrolled students |
+
+### **3. Data Access Layer (DAO Classes)**
+
+| DAO Class | Responsibilities |
+|-----------|------------------|
+| [UserDAO](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/UserDAO.java#10-153) | User authentication, registration, username validation |
+| [CourseDAO](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/CourseDAO.java#10-227) | Course CRUD operations, teacher assignment |
+| `EnrollmentDAO` | Student enrollment, course retrieval, student listing |
+| `TeacherDAO` | Teacher information retrieval |
+
+### **4. Model Classes**
+
+| Model | Fields | Purpose |
+|-------|--------|---------|
+| [User](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/UserDAO.java#10-153) | id, username, password, name, role | Represents authenticated users |
+| [Course](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/CourseDAO.java#11-38) | id, courseCode, name, description, teacherId, teacherName | Represents courses |
+| [Teacher](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/CourseDAO.java#64-85) | id, username, name | Represents teachers |
+
+### **5. Utility Classes**
+
+| Class | Purpose |
+|-------|---------|
+| `DBUtil` | Database connection management (JDBC) |
+
+---
+
+## 🔐 Authentication Workflow (R-1 & R-2)
+
+### **Login Process Flow**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant LoginServlet
+    participant UserDAO
+    participant Database
+    participant Dashboard
+
+    User->>Browser: Enter credentials + select role
+    Browser->>LoginServlet: POST /login
+    LoginServlet->>UserDAO: authenticateWithRole(username, password, role)
+    UserDAO->>Database: SELECT FROM {role} WHERE username=? AND password=?
+    Database-->>UserDAO: User record or null
+    UserDAO-->>LoginServlet: User object or null
+    
+    alt Authentication Success
+        LoginServlet->>LoginServlet: Create session
+        LoginServlet->>LoginServlet: session.setAttribute("user", userObj)
+        LoginServlet->>Dashboard: Redirect based on role
+        Dashboard-->>Browser: Display role-specific dashboard
+        Browser-->>User: Show dashboard
+    else Authentication Failed
+        LoginServlet->>Browser: Redirect to login with error
+        Browser-->>User: Show error message
+    end
+```
+
+### **Detailed Authentication Steps**
+
+**Step 1: User submits login form**
+- Form data: [username](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/UserDAO.java#98-121), `password`, `role`
+- Form action: `<form action="login" method="POST">`
+- JavaScript validation ensures all fields are filled
+
+**Step 2: LoginServlet receives request**
+```java
+protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+    String username = req.getParameter("username");
+    String password = req.getParameter("password");
+    String selectedRole = req.getParameter("role");
+    
+    // Validate role selection
+    if (selectedRole == null || selectedRole.trim().isEmpty()) {
+        resp.sendRedirect("index.jsp?error=Please+select+a+role");
+        return;
+    }
+    
+    // Authenticate with specific role
+    User u = userDao.authenticateWithRole(username, password, selectedRole);
+}
+```
+
+**Step 3: UserDAO queries database**
+```java
+public User authenticateWithRole(String username, String password, String role) {
+    return authenticateFromTable(role, username, password, role);
+}
+
+private User authenticateFromTable(String tableName, String username, String password, String role) {
+    String sql = "SELECT id, username, password, name FROM " + tableName + " WHERE username=? AND password=?";
+    // Execute query and return User object or null
+}
+```
+
+**Step 4: Session creation and role-based redirect**
+```java
+if (u != null) {
+    HttpSession session = req.getSession();
+    session.setAttribute("user", u);
+    
+    switch (u.getRole()) {
+        case "admin":
+            resp.sendRedirect("/admin/dashboard.jsp");
+            break;
+        case "teacher":
+            resp.sendRedirect("/teacher/courses.jsp");
+            break;
+        case "student":
+            resp.sendRedirect("/student/courses.jsp");
+            break;
+    }
+}
+```
+
+**Step 5: JSP access control**
+```jsp
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null || !"admin".equals(user.getRole())) {
+        response.sendRedirect("/index.jsp");
+        return;
+    }
+%>
+```
+
+### **Registration Process Flow**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant RegisterServlet
+    participant UserDAO
+    participant Database
+
+    User->>Browser: Fill registration form + select role
+    Browser->>RegisterServlet: POST /register
+    RegisterServlet->>UserDAO: registerUser(username, password, name, email, role, regNo)
+    UserDAO->>Database: Check if username exists
+    Database-->>UserDAO: Exists or not
+    
+    alt Username Available
+        UserDAO->>Database: INSERT INTO {role} (...)
+        Database-->>UserDAO: Success
+        UserDAO-->>RegisterServlet: true
+        RegisterServlet->>Browser: Redirect to login with success message
+        Browser-->>User: Show success
+    else Username Taken
+        UserDAO-->>RegisterServlet: false
+        RegisterServlet->>Browser: Redirect to register with error
+        Browser-->>User: Show error
+    end
+```
+
+---
+
+## 🎓 Admin Course Management Workflow (R-3)
+
+### **Add Course Flow**
+
+```mermaid
+flowchart TD
+    A[Admin Dashboard] --> B[Click "Add Course" button]
+    B --> C[Fill form: Course Code, Name, Description]
+    C --> D[Select Teacher from dropdown]
+    D --> E[Submit Form]
+    E --> F[AdminAddCourseServlet receives POST]
+    F --> G[CourseDAO.addCourse]
+    G --> H{Course Code Unique?}
+    H -->|Yes| I[INSERT INTO courses]
+    H -->|No| J[Return false]
+    I --> K[Redirect to dashboard with success]
+    J --> L[Redirect with error]
+    K --> M[Dashboard refreshed with new course]
+    L --> M
+```
+
+**Database Operation:**
+```sql
+INSERT INTO courses (course_code, name, description, teacher_id, created_at, updated_at) 
+VALUES (?, ?, ?, ?, NOW(), NOW())
+```
+
+### **Edit Course Flow**
+
+**Step 1:** Admin clicks "Edit" button on dashboard
+```jsp
+<form action="<%= request.getContextPath() %>/admin/updateCourse" method="POST">
+    <input type="hidden" name="courseId" value="<%= course.getId() %>">
+    <input type="hidden" name="oldCourseCode" value="<%= course.getCourseCode() %>">
+```
+
+**Step 2:** AdminUpdateCourseServlet processes request
+```java
+int courseId = Integer.parseInt(req.getParameter("courseId"));
+String courseCode = req.getParameter("courseCode");
+String name = req.getParameter("name");
+String description = req.getParameter("description");
+Integer teacherId = /* parse from request */;
+
+boolean success = courseDao.updateCourse(courseId, name, description, teacherId);
+```
+
+**Step 3:** CourseDAO updates database
+```sql
+UPDATE courses 
+SET name = ?, description = ?, teacher_id = ?, updated_at = NOW() 
+WHERE id = ?
+```
+
+### **Delete Course Flow**
+
+```mermaid
+flowchart TD
+    A[Admin Dashboard] --> B[Click "Delete" button]
+    B --> C[JavaScript confirmation]
+    C -->|Confirm| D[Submit hidden form]
+    C -->|Cancel| E[No action]
+    D --> F[AdminDeleteCourseServlet]
+    F --> G[CourseDAO.deleteCourse]
+    G --> H[DELETE FROM courses WHERE id = ?]
+    H --> I[CASCADE: DELETE FROM enrollments WHERE course_id = ?]
+    I --> J[Redirect to dashboard]
+    J --> K[Course removed from list]
+```
+
+**Cascade Deletion (Database Constraint):**
+```sql
+FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+```
+This ensures all enrollments for a course are automatically deleted when the course is deleted.
+
+### **Assign Teacher Flow**
+
+**Option 1: During course creation**
+- Teacher selected from dropdown populated by `TeacherDAO.getAllTeachers()`
+
+**Option 2: Reassign teacher**
+```java
+// AssignTeacherServlet
+String courseCode = req.getParameter("courseCode");
+Integer teacherId = Integer.parseInt(req.getParameter("teacherId"));
+
+boolean success = courseDao.assignTeacherByCode(courseCode, teacherId);
+```
+
+**Database Update:**
+```sql
+UPDATE courses SET teacher_id = ?, updated_at = NOW() WHERE course_code = ?
+```
+
+---
+
+## 📚 Student Course Management Workflow (R-4)
+
+### **Browse Courses Flow**
+
+```mermaid
+sequenceDiagram
+    participant Student
+    participant Browser
+    participant CoursesJSP
+    participant CourseDAO
+    participant Database
+
+    Student->>Browser: Navigate to /student/courses.jsp
+    Browser->>CoursesJSP: Load page
+    CoursesJSP->>CourseDAO: listAll()
+    CourseDAO->>Database: SELECT * FROM courses LEFT JOIN teacher
+    Database-->>CourseDAO: List of courses with teacher names
+    CourseDAO-->>CoursesJSP: List<Course>
+    CoursesJSP->>CoursesJSP: Render course cards
+    CoursesJSP-->>Browser: HTML with course list
+    Browser-->>Student: Display all available courses
+```
+
+**Database Query (with JOIN):**
+```sql
+SELECT 
+    c.id, c.course_code, c.name, c.description, c.teacher_id,
+    t.name AS teacher_name
+FROM courses c
+LEFT JOIN teacher t ON c.teacher_id = t.id
+ORDER BY c.course_code
+```
+
+### **Enroll in Course Flow**
+
+```mermaid
+flowchart TD
+    A[Student views course] --> B[Click "Register" button]
+    B --> C[Form submission to /student/registerCourse]
+    C --> D[StudentRegisterServlet]
+    D --> E[Get student ID from session]
+    E --> F[Get course ID from request]
+    F --> G[EnrollmentDAO.enrollStudent]
+    G --> H{Already Enrolled?}
+    H -->|No| I[INSERT INTO enrollments]
+    H -->|Yes| J[Unique constraint violation]
+    I --> K[Success - Redirect with message]
+    J --> L[Error - Redirect with message]
+```
+
+**Database Operation:**
+```sql
+INSERT INTO enrollments (student_id, course_id, enrolled_at) 
+VALUES (?, ?, NOW())
+```
+
+**Unique Constraint Prevents Duplicate Enrollments:**
+```sql
+UNIQUE KEY unique_enrollment (student_id, course_id)
+```
+
+### **View Registered Courses Flow**
+
+```mermaid
+sequenceDiagram
+    participant Student
+    participant Browser
+    participant RegisteredJSP
+    participant EnrollmentDAO
+    participant Database
+
+    Student->>Browser: Navigate to /student/registered.jsp
+    Browser->>RegisteredJSP: Load page
+    RegisteredJSP->>RegisteredJSP: Get student ID from session
+    RegisteredJSP->>EnrollmentDAO: getEnrolledCourses(studentId)
+    EnrollmentDAO->>Database: SELECT with JOIN
+    Database-->>EnrollmentDAO: Courses + teacher names + enrollment dates
+    EnrollmentDAO-->>RegisteredJSP: List<Course>
+    RegisteredJSP->>RegisteredJSP: Render course table
+    RegisteredJSP-->>Browser: HTML with enrolled courses
+    Browser-->>Student: Display "My Courses"
+```
+
+**Complex JOIN Query:**
+```sql
+SELECT 
+    c.id, c.course_code, c.name, c.description, 
+    t.name AS teacher_name, 
+    e.enrolled_at
+FROM enrollments e
+INNER JOIN courses c ON e.course_id = c.id
+LEFT JOIN teacher t ON c.teacher_id = t.id
+WHERE e.student_id = ?
+ORDER BY e.enrolled_at DESC
+```
+
+---
+
+## 👨‍🏫 Teacher Student Management Workflow (R-5)
+
+### **View Assigned Courses Flow**
+
+```mermaid
+sequenceDiagram
+    participant Teacher
+    participant Browser
+    participant CoursesJSP
+    participant CourseDAO
+    participant Database
+
+    Teacher->>Browser: Navigate to /teacher/courses.jsp
+    Browser->>CoursesJSP: Load page
+    CoursesJSP->>CoursesJSP: Get teacher ID from session
+    CoursesJSP->>CourseDAO: getByTeacher(teacherId)
+    CourseDAO->>Database: SELECT FROM courses WHERE teacher_id = ?
+    Database-->>CourseDAO: Teacher's courses
+    CourseDAO-->>CoursesJSP: List<Course>
+    CoursesJSP-->>Browser: Display courses with "View Students" buttons
+    Browser-->>Teacher: Show assigned courses
+```
+
+### **View Enrolled Students Flow**
+
+```mermaid
+sequenceDiagram
+    participant Teacher
+    participant Browser
+    participant ViewStudentsServlet
+    participant EnrollmentDAO
+    participant Database
+    participant StudentsJSP
+
+    Teacher->>Browser: Click "View Students" for a course
+    Browser->>ViewStudentsServlet: GET /teacher/viewStudents?courseId=X
+    ViewStudentsServlet->>EnrollmentDAO: getEnrolledStudentsWithDetails(courseId)
+    EnrollmentDAO->>Database: Complex JOIN query
+    Database-->>EnrollmentDAO: Student names + registration numbers
+    EnrollmentDAO-->>ViewStudentsServlet: List<Map<String, Object>>
+    ViewStudentsServlet->>ViewStudentsServlet: Set attributes
+    ViewStudentsServlet->>StudentsJSP: Forward request
+    StudentsJSP->>StudentsJSP: Render student table
+    StudentsJSP-->>Browser: HTML table with students
+    Browser-->>Teacher: Display enrolled students
+```
+
+**Complex Database Query:**
+```sql
+SELECT 
+    s.id, 
+    s.name, 
+    s.registration_no, 
+    e.enrolled_at,
+    c.name AS course_name,
+    c.course_code
+FROM enrollments e
+INNER JOIN student s ON e.student_id = s.id
+INNER JOIN courses c ON e.course_id = c.id
+WHERE e.course_id = ?
+ORDER BY s.name
+```
+
+---
+
+## 🗄️ Database Schema and Relationships
+
+### **Entity Relationship Diagram**
+
+```mermaid
+erDiagram
+    ADMIN ||--o{ COURSES : manages
+    TEACHER ||--o{ COURSES : teaches
+    STUDENT ||--o{ ENROLLMENTS : makes
+    COURSES ||--o{ ENROLLMENTS : has
+    
+    ADMIN {
+        int id PK
+        varchar username UK
+        varchar password
+        varchar name
+        timestamp created_at
+    }
+    
+    TEACHER {
+        int id PK
+        varchar username UK
+        varchar password
+        varchar name
+        timestamp created_at
+    }
+    
+    STUDENT {
+        int id PK
+        varchar username UK
+        varchar password
+        varchar name
+        varchar registration_no UK
+        timestamp created_at
+    }
+    
+    COURSES {
+        int id PK
+        varchar course_code UK
+        varchar name
+        text description
+        int teacher_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    ENROLLMENTS {
+        int id PK
+        int student_id FK
+        int course_id FK
+        timestamp enrolled_at
+    }
+```
+
+### **Database Constraints**
+
+| Table | Constraint | Purpose |
+|-------|-----------|---------|
+| `admin` | UNIQUE(username) | Prevent duplicate usernames |
+| `teacher` | UNIQUE(username) | Prevent duplicate usernames |
+| `student` | UNIQUE(username) | Prevent duplicate usernames |
+| `student` | UNIQUE(registration_no) | Prevent duplicate reg numbers |
+| `courses` | UNIQUE(course_code) | Prevent duplicate course codes |
+| `courses` | FK(teacher_id) ON DELETE SET NULL | Unassign teacher if deleted |
+| `enrollments` | UNIQUE(student_id, course_id) | Prevent duplicate enrollments |
+| `enrollments` | FK(student_id) ON DELETE CASCADE | Delete enrollments if student deleted |
+| `enrollments` | FK(course_id) ON DELETE CASCADE | Delete enrollments if course deleted |
+
+---
+
+## 🔄 Complete Request-Response Cycle Example
+
+### **Example: Student Enrolls in a Course**
+
+**1. User Action:**
+```
+Student clicks "Register" button on CS101 course card
+```
+
+**2. HTTP Request:**
+```http
+POST /CourseManagement/student/registerCourse HTTP/1.1
+Host: localhost:8080
+Content-Type: application/x-www-form-urlencoded
+Cookie: JSESSIONID=ABC123...
+
+courseId=1
+```
+
+**3. Servlet Processing (StudentRegisterServlet):**
+```java
+protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+    // Get session user
+    HttpSession session = req.getSession(false);
+    User user = (User) session.getAttribute("user");
+    
+    // Validate user is student
+    if (user == null || !"student".equals(user.getRole())) {
+        resp.sendRedirect(req.getContextPath() + "/index.jsp");
+        return;
+    }
+    
+    // Get parameters
+    int courseId = Integer.parseInt(req.getParameter("courseId"));
+    int studentId = user.getId();
+    
+    // Enroll student
+    EnrollmentDAO dao = new EnrollmentDAO();
+    boolean success = dao.enrollStudent(studentId, courseId);
+    
+    // Redirect with message
+    if (success) {
+        resp.sendRedirect("courses.jsp?success=enrolled");
+    } else {
+        resp.sendRedirect("courses.jsp?error=already+enrolled");
+    }
+}
+```
+
+**4. DAO Processing (EnrollmentDAO):**
+```java
+public boolean enrollStudent(int studentId, int courseId) {
+    String sql = "INSERT INTO enrollments (student_id, course_id, enrolled_at) VALUES (?, ?, NOW())";
+    
+    try (Connection c = DBUtil.getConnection();
+         PreparedStatement ps = c.prepareStatement(sql)) {
+        
+        ps.setInt(1, studentId);
+        ps.setInt(2, courseId);
+        
+        int rows = ps.executeUpdate();
+        return rows > 0;
+        
+    } catch (SQLException e) {
+        if (e.getErrorCode() == 1062) { // Duplicate entry
+            return false;
+        }
+        throw new RuntimeException(e);
+    }
+}
+```
+
+**5. Database Transaction:**
+```sql
+INSERT INTO enrollments (student_id, course_id, enrolled_at) 
+VALUES (1, 1, '2025-12-15 00:50:00')
+```
+
+**6. HTTP Response:**
+```http
+HTTP/1.1 302 Found
+Location: /CourseManagement/student/courses.jsp?success=enrolled
+Set-Cookie: JSESSIONID=ABC123...
+```
+
+**7. JSP Rendering (courses.jsp):**
+```jsp
+<%
+    String success = request.getParameter("success");
+    if ("enrolled".equals(success)) {
+%>
+    <div class="alert alert-success">
+        Successfully enrolled in the course!
+    </div>
+<%
+    }
+%>
+```
+
+**8. Browser Display:**
+```
+Green alert box: "Successfully enrolled in the course!"
+Course card now shows "Registered" badge
+```
+
+---
+
+## 🎯 Session Management
+
+### **Session Lifecycle**
+
+```mermaid
+stateDiagram-v2
+    [*] --> NoSession: User visits site
+    NoSession --> LoginPage: Redirect to login
+    LoginPage --> Authenticated: Successful login
+    Authenticated --> AdminDashboard: If role=admin
+    Authenticated --> TeacherDashboard: If role=teacher
+    Authenticated --> StudentDashboard: If role=student
+    AdminDashboard --> NoSession: Click logout
+    TeacherDashboard --> NoSession: Click logout
+    StudentDashboard --> NoSession: Click logout
+    NoSession --> [*]
+```
+
+### **Session Attributes**
+
+| Attribute Key | Value Type | Purpose |
+|--------------|------------|---------|
+| [user](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/UserDAO.java#98-121) | [User](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/UserDAO.java#10-153) object | Contains id, username, name, role |
+
+### **Session Validation (Every Protected Page)**
+
+```jsp
+<%
+    HttpSession session = request.getSession(false);
+    User user = (User) session.getAttribute("user");
+    
+    if (session == null || user == null) {
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return;
+    }
+    
+    if (!"admin".equals(user.getRole())) {
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return;
+    }
+%>
+```
+
+---
+
+## 🛠️ Utility Components
+
+### **Database Connection Management (DBUtil)**
+
+```java
+public class DBUtil {
+    private static final String URL = "jdbc:mysql://localhost:3306/course_management";
+    private static final String USER = "root";
+    private static final String PASS = "";
+    
+    public static Connection getConnection() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(URL, USER, PASS);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("MySQL Driver not found", e);
+        }
+    }
+}
+```
+
+**Connection Pattern (DAO Methods):**
+```java
+try (Connection c = DBUtil.getConnection();
+     PreparedStatement ps = c.prepareStatement(sql)) {
+    // Use prepared statement
+} catch (SQLException e) {
+    // Handle exception
+}
+```
+
+Benefits:
+- ✅ Try-with-resources automatically closes connections
+- ✅ Prevents SQL injection via PreparedStatement
+- ✅ Centralized connection configuration
+
+---
+
+## 🎨 UI/UX Workflow
+
+### **Visual Design System**
+
+**Color Palette:**
+```css
+:root {
+  --admin-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --student-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --teacher-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+```
+
+**Animation System:**
+```css
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.card {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+```
+
+### **Responsive Design Breakpoints**
+
+```css
+/* Mobile First */
+@media (max-width: 768px) {
+  /* Stack elements vertically */
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Tablet layout */
+}
+
+@media (min-width: 1025px) {
+  /* Desktop layout */
+}
+```
+
+---
+
+## 📊 Data Flow Summary
+
+### **High-Level System Flow**
+
+```
+User Input (Browser)
+    ↓
+JSP Form Submission
+    ↓
+Servlet (Request Handler)
+    ↓
+DAO (Business Logic)
+    ↓
+Database (MySQL)
+    ↓
+DAO (Result Processing)
+    ↓
+Servlet (Response Preparation)
+    ↓
+JSP (HTML Rendering)
+    ↓
+Browser (Display to User)
+```
+
+### **Key Design Patterns**
+
+1. **MVC Pattern**: Separation of concerns (Model, View, Controller)
+2. **DAO Pattern**: Abstraction of data access logic
+3. **Front Controller**: Servlets handle all requests
+4. **Session Facade**: User session manages authentication state
+5. **Template Method**: JSP templates with dynamic content
+
+---
+
+## ✅ Error Handling Strategy
+
+### **Validation Layers**
+
+**1. Client-Side (JavaScript):**
+```javascript
+function validateForm() {
+  if (!username || !password || !role) {
+    alert("All fields are required");
+    return false;
+  }
+  return true;
+}
+```
+
+**2. Servlet-Side (Java):**
+```java
+if (selectedRole == null || selectedRole.trim().isEmpty()) {
+    resp.sendRedirect("index.jsp?error=Please+select+a+role");
+    return;
+}
+```
+
+**3. Database-Side (Constraints):**
+```sql
+UNIQUE KEY (username)  -- Prevents duplicate usernames
+NOT NULL               -- Ensures required fields
+FOREIGN KEY            -- Maintains referential integrity
+```
+
+**4. User Feedback:**
+```jsp
+<%
+    String error = request.getParameter("error");
+    if (error != null) {
+%>
+    <div class="alert alert-danger"><%= error %></div>
+<%
+    }
+%>
+```
+
+---
+
+## 🚀 Performance Optimizations
+
+1. **Database Indexing:**
+   - Primary keys on all tables
+   - Unique indexes on [username](file:///home/nahid-pc/Desktop/WebProject/CourseManagement/src/main/java/dao/UserDAO.java#98-121), `course_code`, `registration_no`
+   - Foreign key indexes for JOIN operations
+
+2. **Connection Pooling:**
+   - Try-with-resources ensures proper resource cleanup
+   - Prevents connection leaks
+
+3. **Prepared Statements:**
+   - Prevents SQL injection
+   - Allows query plan caching
+
+4. **Session Management:**
+   - Minimal session data (only User object)
+   - Stateless where possible
+
+---
+
+**End of Workflow Documentation**
+
+This document provides a complete understanding of how the Course Management System operates internally, from user interactions to database operations.
